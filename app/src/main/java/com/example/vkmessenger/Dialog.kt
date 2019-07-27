@@ -20,7 +20,7 @@ class Dialog : AppCompatActivity() {
 
     var accessToken: String = ""
 
-    fun callMethod(
+    private fun callMethod(
         methodName: String,
         callback: VKApiResponseParser<Any>? = null,
         params: Map<String, String>? = null
@@ -55,9 +55,11 @@ class Dialog : AppCompatActivity() {
         accessToken = intent.getStringExtra("accessToken")!!
         callMethod("messages.getHistory", VKApiResponseParser { res ->
             run {
+                log("get response: $res")
                 val answer = Klaxon().parseJsonObject(res.reader())
                 val response = answer["response"] as JsonObject
                 val items = response["items"] as JsonArray<JsonObject>
+                items.sortBy { jsonObject -> jsonObject["date"] as Int }
                 val scroll = ScrollView(this)
                 val messagesLayout = LinearLayout(scroll.context)
                 messagesLayout.orientation = LinearLayout.VERTICAL
@@ -67,10 +69,12 @@ class Dialog : AppCompatActivity() {
                 }
                 for (msg in items) {
                     val msgText = msg["text"] as String
-                    messagesLayout.run {
-                        linearLayout {
+                    runOnUiThread {
+                        messagesLayout.run {
+                            linearLayout {
+                                textView(msgText)
+                            }
                             dividerPadding = 10
-                            textView(msgText)
                         }
                     }
                 }

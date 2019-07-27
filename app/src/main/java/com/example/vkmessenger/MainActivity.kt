@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
                             scroll.addView(listDialogsLayout)
                         }
                         log("items size: ${items.size}")
+                        items.sortByDescending { jsonObject -> (jsonObject["last_message"] as JsonObject)["date"] as Int }
                         for (item in items) {
                             val dialog = item["conversation"] as JsonObject
                             val lastMessage = item["last_message"] as JsonObject
@@ -91,15 +92,19 @@ class MainActivity : AppCompatActivity() {
                                     val usersArray = answer["response"] as JsonArray<JsonObject>
                                     log(usersArray)
                                     val user = usersArray[0]
+                                    log(user)
                                     val firstName = user["first_name"] as String
                                     val lastName = user["last_name"] as String
-                                    val photo50URL = user[avatarSize] as String
-                                    val inputStream = URL(photo50URL).content as InputStream
-                                    val d = Drawable.createFromStream(inputStream, firstName)
+                                    var d: Drawable? = null
+                                    if (user.containsKey(avatarSize)) {
+                                        val photo50URL = user[avatarSize] as String
+                                        val inputStream = URL(photo50URL).content as InputStream
+                                        d = Drawable.createFromStream(inputStream, firstName)
+                                    }
                                     runOnUiThread {
                                         listDialogsLayout.run {
                                             linearLayout {
-                                                imageView(d)
+                                                if (d != null) imageView(d)
                                                 verticalLayout {
                                                     textView("$firstName $lastName").textColor = Color.DKGRAY
                                                     textView(lastMsgText)
