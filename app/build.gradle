@@ -35,4 +35,7 @@ dependencies {
     implementation 'com.vk:androidsdk:2.1.1'
     implementation "org.jetbrains.anko:anko:$anko_version"
     implementation 'com.beust:klaxon:5.0.1'
+    implementation "io.reactivex.rxjava2:rxkotlin:2.4.0-beta.1"
+    implementation "io.reactivex.rxjava2:rxjava:2.2.10"
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
 }

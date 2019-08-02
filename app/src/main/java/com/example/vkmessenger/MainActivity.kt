@@ -18,6 +18,7 @@ import org.jetbrains.anko.*
 import org.jetbrains.anko.sdk27.coroutines.onClick
 import java.io.InputStream
 import java.net.URL
+import java.util.concurrent.CountDownLatch
 
 class MainActivity : AppCompatActivity() {
 
@@ -79,6 +80,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         log("items size: ${items.size}")
                         items.sortByDescending { jsonObject -> (jsonObject["last_message"] as JsonObject)["date"] as Int }
+                        val tasks = CountDownLatch(items.size)
                         for (item in items) {
                             val dialog = item["conversation"] as JsonObject
                             val lastMessage = item["last_message"] as JsonObject
