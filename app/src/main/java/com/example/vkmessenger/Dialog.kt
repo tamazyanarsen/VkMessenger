@@ -1,18 +1,10 @@
 package com.example.vkmessenger
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.LinearLayoutCompat
-import androidx.core.view.marginLeft
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Klaxon
@@ -20,18 +12,16 @@ import com.vk.api.sdk.VKApiConfig
 import com.vk.api.sdk.VKApiManager
 import com.vk.api.sdk.VKApiResponseParser
 import com.vk.api.sdk.VKMethodCall
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.rxkotlin.toObservable
 import kotlinx.android.synthetic.main.activity_dialog.*
-import org.jetbrains.anko.*
-import io.reactivex.rxkotlin.toObservable
-import kotlinx.android.synthetic.main.activity_dialog.dialogLayout
-import kotlinx.android.synthetic.main.activity_dialog.view.*
+import kotlinx.android.synthetic.main.msglayout.*
+import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class Dialog : AppCompatActivity() {
 
     var accessToken: String = ""
+    private lateinit var adapter: MsgAdapter
+    private var userId: Int = 100
 
     private fun callMethod(
         methodName: String,
@@ -57,7 +47,7 @@ class Dialog : AppCompatActivity() {
     }
 
     private fun log(msg: Any) {
-        Log.d("DIALOG VKMSG", msg.toString())
+        Log.d("VKMSG DIALOG", msg.toString())
     }
 
     @SuppressLint("CheckResult", "RtlHardcoded")
@@ -65,31 +55,14 @@ class Dialog : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog)
 
+        val allMsg = arrayListOf<String>()
+
         recycleViewMessages.layoutManager = LinearLayoutManager(this)
+        adapter = MsgAdapter(allMsg, this)
+        recycleViewMessages.adapter = adapter
 
-        val list = arrayListOf("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
-
-//        list.toObservable() // extension function for Iterables
-//            .filter { it.length >= 5 }
-//            .subscribeBy(  // named arguments for lambda Subscribers
-//                onNext = { println(it) },
-//                onError =  { it.printStackTrace() },
-//                onComplete = { println("Done!") }
-//            )
-
-        list.toObservable().subscribeBy { s ->
-            log("get next: $s")
-        }
-
-        list[0] = "new element"
-
-//        list.add("new element")
-
-        val userId = intent.getIntExtra("userId", 100)
+        userId = intent.getIntExtra("userId", 100)
         accessToken = intent.getStringExtra("accessToken")!!
-
-//        val parentWidth = messagesLayout.width
-        val parentHeight = this@Dialog.window.decorView.height
 
         callMethod("messages.getHistory", VKApiResponseParser { res ->
             run {
@@ -98,53 +71,24 @@ class Dialog : AppCompatActivity() {
                 val response = answer["response"] as JsonObject
                 val items = response["items"] as JsonArray<JsonObject>
                 items.sortBy { jsonObject -> jsonObject["date"] as Int }
-//                val scroll = ScrollView(this)
-//                val messagesLayout = LinearLayout(scroll.context)
-//                messagesLayout.orientation = LinearLayout.VERTICAL
-//                val formSend = LinearLayout(this)
-//                formSend.orientation = LinearLayout.HORIZONTAL
-//                runOnUiThread {
-                    //                    verticalLayout {
-//                        linearLayout {
-//                            scrollView {
-//                                messagesLayout = verticalLayout()
-//                            }
-//                        }
-//                        linearLayout{
-//                            button("sdfsdfsdf")
-//                            button("sdfsdfsdf")
-//                        }
-//                    }
-
-//                    dialogLayout.addView(scroll)
-//                    dialogLayout.addView(formSend)
-//                    scroll.addView(messagesLayout)
-//                }
                 for (msg in items) {
+                    log("curr msg: $msg")
                     val msgText = msg["text"] as String
+                    allMsg.add(msgText)
+                    val copyMsg = allMsg.subList(0, allMsg.size)
+//                    allMsg.clear()
                     runOnUiThread {
-//                        messagesLayout.run {
-//                            linearLayout {
-//                                val t = textView(msgText)
-//                                t.setPadding(parentWidth / 100, 0, parentWidth / 2, 0)
-//                                if (msg["from_id"] as Int != userId) {
-//                                    t.setPadding(parentWidth / 2, 0, parentWidth / 98, 0)
-//                                    t.gravity = Gravity.RIGHT
-//                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-//                                        t.textAlignment = TextView.TEXT_ALIGNMENT_GRAVITY
-//                                    }
-//                                }
-//                            }
-//                            dividerPadding = 100
-//                        }
+                        adapter.notifyDataSetChanged()
+//                        adapter.notifyItemInserted(allMsg.size - 1)
                     }
                 }
-//                runOnUiThread {
-//                    sendMessageButton.onClick {
-//                        toast("отправляем сообщение: ${sendMessageEditText.text}")
-//                    }
-//                }
             }
         }, mapOf(Pair("user_id", userId.toString())))
+
+        sendMessageButton.onClick {
+            val msgText = msgTextView.text
+            callMethod("messages.send", VKApiResponseParser { res -> log(res) },
+                mapOf(Pair("user_id", userId.toString()), Pair("message", msgText.toString())))
+        }
     }
 }
